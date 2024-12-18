@@ -55,6 +55,24 @@ class CityLocator:
         direct = self.direction.get_compass_direction(bearing)
         
         return city_name, distance, direct
+    def find_cities_within_radius(self, user_lat, user_lon, radius):
+
+        cities_within_radius = []
+
+        for _, row in self.city_data.iterrows():
+            city_lat = row['Latitude']
+            city_lon = row['Longitude']
+            distance = self.calculator.haversine(user_lat, user_lon, city_lat, city_lon)
+            bearing = self.direction.calculate_bearing(user_lat, user_lon, city_lat, city_lon)
+            direct = self.direction.get_compass_direction(bearing)
+
+            if distance <= radius:
+                cities_within_radius.append({
+                    'City' : row['City'],
+                    'distance' : round(distance,2),
+                    'direction' : direct
+                })
+        return cities_within_radius
 
     def run(self):
         self.load_data()
@@ -64,6 +82,7 @@ class CityLocator:
             print("Choose the option")
             print("Option 1: Find the city based on lat and long")
             print("Option 2: Calculate distance of any city from your location")
+            print("option 3: Find all cities within a given radius")
             choice = int(input("Enter the choice: "))
 
             if choice == 1:
@@ -80,7 +99,13 @@ class CityLocator:
 
                 if city_name:
                     print(f"Distance to {city_name} is {distance} K M in {direct}")
+            elif choice == 3:
+                radius = int(input("Enter the radius: "))
+                user_lat, user_lon = self.location.getLocation()
+                cities = self.find_cities_within_radius(user_lat, user_lon, radius)
 
+                for city in cities:
+                    print(f"{city['City']} is {city['distance']} K M in the {city['direction']} direction")
         except Exception as e:
             print("Error:", e)
 
