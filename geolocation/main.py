@@ -1,6 +1,7 @@
 from cluster import KMeansClustering
 from harversian import HaversineCalculator
 import pandas as pd
+from location import Location
 
 class CityLocator:
     def __init__(self, city_data_file, k=10):
@@ -9,9 +10,12 @@ class CityLocator:
         self.city_data = None
         self.centroids = []
         self.calculator = HaversineCalculator()
+        self.location = Location()
 
     def load_data(self):
-        self.city_data = pd.read_csv(self.city_data_file)
+        city_raw_data = pd.read_csv(self.city_data_file)
+        city_raw_data['City'] = city_raw_data['City'].str.lower()
+        self.city_data = city_raw_data
 
     def cluster_cities(self):
         kmeans = KMeansClustering(self.city_data, self.k)
@@ -35,18 +39,42 @@ class CityLocator:
                 closest_city = row['City']
 
         return closest_city, city_distance
+    def find_distance_to_city(self, user_lat, user_lon, city_name):
+        city_row = self.city_data[self.city_data['City'].str.lower() == city_name.lower()]
+        
+        if city_row.empty:
+            return None, None 
+        
+        city_lat = city_row.iloc[0]['Latitude']
+        city_lon = city_row.iloc[0]['Longitude']
+        distance = self.calculator.haversine(user_lat, user_lon, city_lat, city_lon)
+        
+        return city_name, distance
 
     def run(self):
         self.load_data()
         self.cluster_cities()
 
         try:
-            user_lat = float(input("Enter Latitude: "))
-            user_lon = float(input("Enter Longitude: "))
+            print("Choose the option")
+            print("Option 1: Find the city based on lat and long")
+            print("Option 2: Calculate distance of any city from your location")
+            choice = int(input("Enter the choice: "))
 
-            closest_city, city_distance = self.find_closest_city(user_lat, user_lon)
-            print(f"\nYou are closest to: {closest_city}")
-            print(f"Distance to {closest_city}: {city_distance:.2f} km")
+            if choice == 1:
+                user_lat = float(input("Enter Latitude: "))
+                user_lon = float(input("Enter Longitude: "))
+
+                closest_city, city_distance = self.find_closest_city(user_lat, user_lon)
+                print(f"\nYou are closest to: {closest_city}")
+                print(f"Distance to {closest_city}: {city_distance:.2f} km")
+            elif choice == 2:
+                city_name = input("Enter the city name: ")
+                latitude, longitude = self.location.getLocation()
+                city_name, distance = self.find_distance_to_city(latitude, longitude, city_name)
+                if city_name:
+                    print(f"Distance to {city_name} is {distance} K M")
+
         except Exception as e:
             print("Error:", e)
 
