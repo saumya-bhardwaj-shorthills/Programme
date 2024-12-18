@@ -2,6 +2,7 @@ from cluster import KMeansClustering
 from harversian import HaversineCalculator
 import pandas as pd
 from location import Location
+from direction import Direction
 
 class CityLocator:
     def __init__(self, city_data_file, k=10):
@@ -11,6 +12,8 @@ class CityLocator:
         self.centroids = []
         self.calculator = HaversineCalculator()
         self.location = Location()
+        self.direction = Direction()
+
 
     def load_data(self):
         city_raw_data = pd.read_csv(self.city_data_file)
@@ -48,8 +51,10 @@ class CityLocator:
         city_lat = city_row.iloc[0]['Latitude']
         city_lon = city_row.iloc[0]['Longitude']
         distance = self.calculator.haversine(user_lat, user_lon, city_lat, city_lon)
+        bearing = self.direction.calculate_bearing(user_lat, user_lon, city_lat, city_lon)
+        direct = self.direction.get_compass_direction(bearing)
         
-        return city_name, distance
+        return city_name, distance, direct
 
     def run(self):
         self.load_data()
@@ -71,9 +76,10 @@ class CityLocator:
             elif choice == 2:
                 city_name = input("Enter the city name: ")
                 latitude, longitude = self.location.getLocation()
-                city_name, distance = self.find_distance_to_city(latitude, longitude, city_name)
+                city_name, distance, direct = self.find_distance_to_city(latitude, longitude, city_name)
+
                 if city_name:
-                    print(f"Distance to {city_name} is {distance} K M")
+                    print(f"Distance to {city_name} is {distance} K M in {direct}")
 
         except Exception as e:
             print("Error:", e)
